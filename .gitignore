@@ -7,3 +7,4 @@ bin/
 allure-results/
 allure-report/
 reports/
+.DS_Store
