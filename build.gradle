@@ -1,0 +1,92 @@
+plugins {
+    id 'java'
+    id 'io.qameta.allure' version '2.12.0'
+}
+
+group = 'com.example'
+version = '1.2.0'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
+
+ext {
+    cucumberVersion = '7.18.1'
+    seleniumVersion = '4.21.0'
+    testngVersion = '7.10.2'
+    webDriverManagerVersion = '5.8.0'
+    allureVersion = '2.33.0'
+    slf4jVersion = '2.0.13'
+}
+
+dependencies {
+    testImplementation "io.cucumber:cucumber-java:${cucumberVersion}"
+    testImplementation "io.cucumber:cucumber-testng:${cucumberVersion}"
+    testImplementation "org.seleniumhq.selenium:selenium-java:${seleniumVersion}"
+    testImplementation "io.github.bonigarcia:webdrivermanager:${webDriverManagerVersion}"
+    testImplementation "org.testng:testng:${testngVersion}"
+    testImplementation "commons-io:commons-io:2.16.1"
+    testImplementation "io.qameta.allure:allure-cucumber7-jvm:${allureVersion}"
+    testImplementation "io.qameta.allure:allure-testng:${allureVersion}"
+    testImplementation "org.slf4j:slf4j-simple:${slf4jVersion}"
+}
+
+allure {
+    version = allureVersion
+    adapter {
+        aspectjWeaver.set(false)
+        frameworks {
+            cucumber7Jvm {
+                adapterVersion.set(allureVersion)
+            }
+            testng {
+                adapterVersion.set(allureVersion)
+            }
+        }
+    }
+}
+
+test {
+    useTestNG() {
+        suites 'src/test/resources/testng.xml'
+    }
+
+    systemProperty 'env', System.getProperty('env', 'qa')
+    systemProperty 'browser', System.getProperty('browser', 'chrome')
+    systemProperty 'headless', System.getProperty('headless', 'true')
+    systemProperty 'cucumber.filter.tags', System.getProperty('cucumber.filter.tags', '')
+    systemProperty 'dataproviderthreadcount', System.getProperty('threads', '2')
+    systemProperty 'cucumber.plugin', System.getProperty(
+            'cucumber.plugin',
+            'pretty, summary, html:build/reports/cucumber/cucumber-report.html'
+    )
+
+    testLogging {
+        events 'PASSED', 'FAILED', 'SKIPPED'
+        exceptionFormat 'full'
+        showStandardStreams = false
+    }
+}
+
+tasks.register('cucumber', Test) {
+    group = 'verification'
+    description = 'Runs Cucumber TestNG scenarios.'
+
+    useTestNG() {
+        suites 'src/test/resources/testng.xml'
+    }
+
+    include '**/TestRunner.class'
+
+    systemProperty 'env', System.getProperty('env', 'qa')
+    systemProperty 'browser', System.getProperty('browser', 'chrome')
+    systemProperty 'headless', System.getProperty('headless', 'true')
+    systemProperty 'cucumber.filter.tags', System.getProperty('cucumber.filter.tags', '')
+    systemProperty 'dataproviderthreadcount', System.getProperty('threads', '2')
+}
