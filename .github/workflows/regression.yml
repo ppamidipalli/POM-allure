@@ -1,0 +1,70 @@
+name: Regression - Smoke Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  smoke-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java-version: [ '11' ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ matrix.java-version }}
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission to gradlew
+        run: chmod +x gradlew
+
+      - name: Run Smoke Tests (@smoke tag)
+        run: ./gradlew cucumber -Dcucumber.filter.tags="@smoke" -Dheadless=true -Denv=qa
+
+      - name: Generate Allure Report
+        if: always()
+        run: |
+          if [ -d "build/allure-results" ]; then
+            npm install -g allure-commandline
+            allure generate build/allure-results -o build/allure-report
+          fi
+
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-reports
+          path: |
+            build/reports/
+            build/allure-report/
+          retention-days: 30
+
+      - name: Upload Screenshots (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: failure-screenshots
+          path: build/screenshots/
+          retention-days: 7
+
+      - name: Publish Test Results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: build/test-results/**/TEST-*.xml
+          comment_on_pr: true
+          compare_to_earlier_commit: true
+
