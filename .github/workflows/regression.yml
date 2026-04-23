@@ -39,7 +39,7 @@ jobs:
         run: |
           if [ -d "build/allure-results" ]; then
             npm install -g allure-commandline
-            allure generate build/allure-results -o build/allure-report
+            allure generate build/reports -o build/allure-report
           fi
 
       - name: Upload Test Reports
